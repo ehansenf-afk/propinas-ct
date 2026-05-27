@@ -233,7 +233,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
       </div>
       <div class="field-group">
         <label>Break (minutos)</label>
-        <input type="number" id="trab-break" placeholder="30" inputmode="numeric" min="0" max="120">
+        <input type="text" id="trab-break" placeholder="30" inputmode="numeric">
       </div>
     </div>
     <div class="field-group">
@@ -256,7 +256,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
     </div>
     <div class="field-group">
       <label>PP — Puntos base</label>
-      <input type="number" id="cargo-puntos" placeholder="ej: 1, 0.7, 0.5" inputmode="decimal" step="0.1">
+      <input type="text" id="cargo-puntos" placeholder="ej: 1, 0.7, 0.5" inputmode="decimal">
     </div>
     <p class="hint" style="margin-bottom:14px;">Mayor puntaje = mayor proporción de la propina. Editable por turno.</p>
     <button class="modal-btn modal-btn-primary" onclick="guardarCargo()">Guardar</button>
@@ -467,7 +467,6 @@ function renderDayBody(fecha){
 
   const calcBtn=!st.guardado&&st.turno.length>0
     ?`<button class="btn-calcular" onclick="calcularDia('${fecha}')">✨ Calcular reparto</button>`:'';
-
   const resHTML=st.resultado?renderResultadoHTML(fecha,st.resultado,st.ptd):'';
   return`${ptdRow}${st.turno.length>0?`<div class="section-label">Turno</div>`:''}${turnoHTML}${addRow}${calcBtn}${resHTML}`;
 }
@@ -610,7 +609,7 @@ function renderCargos(){
 }
 async function guardarCargo(){
   const nombre=document.getElementById('cargo-nombre').value.trim();
-  const puntos=parseFloat(document.getElementById('cargo-puntos').value);
+  const puntos=parseFloat(document.getElementById('cargo-puntos').value.replace(',','.'));
   if(!nombre||isNaN(puntos)){toast('⚠️ Completa todos los campos');return;}
   await api('cargos',{method:'POST',body:JSON.stringify({nombre,puntos})});
   closeModal('modal-cargo');
