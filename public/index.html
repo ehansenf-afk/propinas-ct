@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Propinas CT">
+<meta name="theme-color" content="#2a7a74">
+<title>Propinas · Casa Turquesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tq:#2a7a74; --tq-light:#3a9e96; --tq-dark:#1a5550;
+  --tq-bg:#e8f5f4; --tq-bg2:#d0eeec;
+  --gold:#C9A84C;
+  --red:#e05555; --red-bg:#fdeaea;
+  --text:#1a2e2d; --text-muted:#7a9e9b;
+  --bg:#f0f7f6; --white:#ffffff;
+  --card-shadow:0 2px 12px rgba(42,122,116,0.10);
+  --radius:18px; --radius-sm:12px;
+  font-family:'Nunito',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
+.header{background:linear-gradient(160deg,var(--tq-dark) 0%,var(--tq) 100%);padding:48px 20px 18px;display:flex;align-items:center;gap:14px;}
+.header-icon{width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+.header-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:0.5px;}
+.header-sub{font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:2px;margin-top:2px;text-transform:uppercase;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);display:flex;border-top:1px solid rgba(42,122,116,0.12);padding-bottom:env(safe-area-inset-bottom,0px);z-index:100;}
+.nav-item{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:transparent;cursor:pointer;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;transition:color 0.15s;}
+.nav-item .ni{font-size:22px;}
+.nav-item.active{color:var(--tq);}
+.nav-item.active .ni-bg{background:var(--tq-bg);border-radius:10px;padding:2px 10px;}
+.screen{display:none;padding:16px 16px calc(80px + env(safe-area-inset-bottom,0px));min-height:100vh;}
+.screen.active{display:block;}
+.screen-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.screen-title{font-size:24px;font-weight:800;color:var(--text);}
+.btn-nuevo{background:var(--tq);color:#fff;border:none;border-radius:50px;padding:10px 20px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(42,122,116,0.3);transition:all 0.15s;}
+.btn-nuevo:active{transform:scale(0.96);}
+.week-nav{display:flex;align-items:center;justify-content:space-between;background:var(--white);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;box-shadow:var(--card-shadow);}
+.week-nav-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--tq-bg2);background:var(--tq-bg);color:var(--tq);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.week-label{font-size:13px;font-weight:700;color:var(--tq);text-align:center;}
+.week-sub{font-size:11px;color:var(--text-muted);text-align:center;}
+.day-card{background:var(--white);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--card-shadow);overflow:hidden;border:2px solid transparent;transition:border-color 0.15s;}
+.day-card.expanded{border-color:var(--tq);}
+.day-header{display:flex;align-items:center;justify-content:space-between;padding:16px;cursor:pointer;}
+.day-name{font-size:17px;font-weight:800;color:var(--text);}
+.day-date{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.day-meta{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.day-ptd{font-size:12px;color:var(--tq);font-weight:700;margin-top:2px;}
+.day-header-right{display:flex;align-items:center;gap:8px;}
+.chevron{color:var(--tq);font-size:14px;transition:transform 0.2s;}
+.day-card.expanded .chevron{transform:rotate(180deg);}
+.btn-del{width:32px;height:32px;border-radius:10px;background:var(--red-bg);border:none;color:var(--red);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.day-body{display:none;padding:0 14px 14px;background:var(--tq-bg);border-top:1px solid var(--tq-bg2);}
+.day-card.expanded .day-body{display:block;}
+.ptd-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:14px;padding-top:14px;}
+.ptd-row>div{flex:1;}
+.ptd-row label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);display:block;margin-bottom:4px;}
+.ptd-input{width:100%;padding:10px 12px;border:1.5px solid var(--tq-bg2);border-radius:10px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;background:var(--white);color:var(--tq);-webkit-appearance:none;}
+.ptd-input:focus{outline:none;border-color:var(--tq);}
+.section-label{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--tq);margin-bottom:8px;}
+.turno-row{background:var(--white);border-radius:12px;padding:12px;margin-bottom:8px;}
+.turno-top{display:flex;align-items:center;gap:8px;}
+.turno-bubble{width:34px;height:34px;border-radius:50%;background:var(--tq);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.turno-info{flex:1;}
+.turno-name{font-size:14px;font-weight:700;}
+.turno-cargo{font-size:11px;color:var(--text-muted);}
+.turno-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.turno-fields label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--text-muted);display:block;margin-bottom:3px;}
+.turno-fields input{width:100%;padding:8px 10px;border:1.5px solid #e0eeed;border-radius:8px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;text-align:center;background:var(--tq-bg);color:var(--text);-webkit-appearance:none;}
+.turno-fields input:focus{outline:none;border-color:var(--tq);background:#fff;}
+.add-worker-row{display:flex;gap:8px;margin-top:10px;}
+.worker-select{flex:1;padding:10px 12px;border:1.5px solid var(--tq-bg2);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;background:var(--white);color:var(--text);-webkit-appearance:none;}
+.btn-agregar{background:var(--tq);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.btn-agregar:active{transform:scale(0.96);}
+.btn-calcular{width:100%;padding:13px;margin-top:12px;background:var(--gold);color:var(--tq-dark);border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(201,168,76,0.3);}
+.btn-calcular:active{transform:scale(0.97);}
+.resultado-box{background:var(--white);border-radius:12px;padding:14px;margin-top:10px;}
+.resultado-title{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--tq);margin-bottom:10px;}
+.res-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--tq-bg);}
+.res-row:last-of-type{border-bottom:none;}
+.res-left{display:flex;align-items:center;gap:8px;}
+.res-bubble{width:28px;height:28px;border-radius:50%;background:var(--tq);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.res-name{font-size:13px;font-weight:700;}
+.res-detail{font-size:10px;color:var(--text-muted);}
+.res-monto{font-size:17px;font-weight:800;color:var(--tq);}
+.res-pct{font-size:10px;color:var(--text-muted);text-align:right;}
+.res-total{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:2px solid var(--tq-bg2);}
+.res-total span{font-size:12px;font-weight:700;color:var(--text-muted);}
+.res-total strong{font-size:18px;font-weight:800;color:var(--tq);}
+.btn-guardar{width:100%;padding:12px;margin-top:10px;background:var(--tq);color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-guardar:active{transform:scale(0.97);}
+.worker-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--card-shadow);display:flex;align-items:center;gap:12px;}
+.wcard-bubble{width:42px;height:42px;border-radius:50%;background:var(--tq);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wcard-info{flex:1;}
+.wcard-name{font-size:15px;font-weight:700;}
+.wcard-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.cargo-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--card-shadow);display:flex;align-items:center;justify-content:space-between;}
+.cargo-name{font-size:15px;font-weight:700;}
+.cargo-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.cargo-pts{background:var(--tq-bg);color:var(--tq);font-size:15px;font-weight:800;padding:6px 14px;border-radius:50px;}
+.cargo-actions{display:flex;gap:6px;align-items:center;}
+.inf-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--card-shadow);}
+.inf-card-title{font-size:16px;font-weight:800;color:var(--tq);margin-bottom:12px;}
+.inf-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--tq-bg);}
+.inf-row:last-child{border-bottom:none;}
+.inf-name{font-size:14px;font-weight:700;}
+.inf-sub{font-size:11px;color:var(--text-muted);}
+.inf-total-monto{font-size:16px;font-weight:800;color:var(--tq);}
+.inf-week-total{background:var(--tq);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.inf-week-total span{color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;}
+.inf-week-total strong{color:#fff;font-size:22px;font-weight:800;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:none;align-items:flex-end;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp 0.25s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:36px;height:4px;background:#e0e8e7;border-radius:2px;margin:0 auto 18px;}
+.modal-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:18px;}
+.field-group{margin-bottom:14px;}
+.field-group label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.field-group input,.field-group select{width:100%;padding:12px 14px;border:1.5px solid #dceeed;border-radius:10px;font-family:'Nunito',sans-serif;font-size:15px;background:var(--bg);color:var(--text);-webkit-appearance:none;}
+.field-group input:focus,.field-group select:focus{outline:none;border-color:var(--tq);}
+.modal-btn{width:100%;padding:14px;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;}
+.modal-btn-primary{background:var(--tq);color:#fff;box-shadow:0 4px 14px rgba(42,122,116,0.25);}
+.modal-btn-ghost{background:transparent;color:var(--tq);border:1.5px solid var(--tq);}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--tq-dark);color:#fff;padding:11px 22px;border-radius:50px;font-size:14px;font-weight:600;z-index:1000;transition:transform 0.3s;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:30px;color:var(--text-muted);font-size:14px;}
+.spinner{width:18px;height:18px;border:2px solid #ddd;border-top-color:var(--tq);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:40px 20px;color:var(--text-muted);}
+.empty-icon{font-size:44px;opacity:0.35;margin-bottom:10px;}
+@media print{
+  .header,.bottom-nav,.week-nav,.btn-calcular,.btn-guardar,.btn-agregar,.add-worker-row,.screen:not(#screen-informe){display:none!important;}
+  #screen-informe{display:block!important;padding:0;}
+  body{background:white;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🏠</div>
+  <div>
+    <div class="header-title">CASA TURQUESA</div>
+    <div class="header-sub">Propinas · Cafetería</div>
+  </div>
+</div>
+
+<div class="screen active" id="screen-semana">
+  <div class="screen-header">
+    <div class="screen-title">Propinas</div>
+  </div>
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick="cambiarSemana(-1)">‹</button>
+    <div>
+      <div class="week-label" id="week-label-main">—</div>
+      <div class="week-sub" id="week-sub-main">—</div>
+    </div>
+    <button class="week-nav-btn" onclick="cambiarSemana(1)">›</button>
+  </div>
+  <div id="days-list"></div>
+</div>
+
+<div class="screen" id="screen-equipo">
+  <div class="screen-header">
+    <div class="screen-title">Equipo</div>
+    <button class="btn-nuevo" onclick="openModal('modal-trabajador')">+ Nuevo</button>
+  </div>
+  <div id="equipo-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+</div>
+
+<div class="screen" id="screen-cargos">
+  <div class="screen-header">
+    <div class="screen-title">Cargos</div>
+    <button class="btn-nuevo" onclick="openModal('modal-cargo')">+ Nuevo</button>
+  </div>
+  <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">El PP es editable por turno si alguien cumple otra función ese día.</p>
+  <div id="cargos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+</div>
+
+<div class="screen" id="screen-informe">
+  <div class="screen-header">
+    <div class="screen-title">Informe</div>
+    <button class="btn-nuevo" onclick="compartirInforme()" style="background:var(--tq-dark);">📤 Compartir</button>
+  </div>
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick="cambiarSemanaInf(-1)">‹</button>
+    <div>
+      <div class="week-label" id="week-label-inf">—</div>
+      <div class="week-sub" id="week-sub-inf">—</div>
+    </div>
+    <button class="week-nav-btn" onclick="cambiarSemanaInf(1)">›</button>
+  </div>
+  <div id="informe-contenido"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+  <button class="btn-guardar" onclick="imprimirInforme()" style="margin-top:10px;background:var(--tq-dark);">🖨️ Imprimir / PDF</button>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-item active" id="nav-semana" onclick="showScreen('semana')">
+    <div class="ni ni-bg">📅</div><span>Semana</span>
+  </button>
+  <button class="nav-item" id="nav-equipo" onclick="showScreen('equipo')">
+    <div class="ni">👥</div><span>Equipo</span>
+  </button>
+  <button class="nav-item" id="nav-cargos" onclick="showScreen('cargos')">
+    <div class="ni">⚙️</div><span>Cargos</span>
+  </button>
+  <button class="nav-item" id="nav-informe" onclick="showScreen('informe')">
+    <div class="ni">📊</div><span>Informe</span>
+  </button>
+</div>
+
+<div class="modal-overlay" id="modal-trabajador">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo Trabajador</div>
+    <div class="field-group">
+      <label>Nombre completo</label>
+      <input type="text" id="trab-nombre" placeholder="Nombre Apellido" oninput="autoIniciales()">
+    </div>
+    <div class="field-group">
+      <label>Iniciales (ej: AC, RR)</label>
+      <input type="text" id="trab-iniciales" placeholder="AC" maxlength="3" style="text-transform:uppercase;">
+    </div>
+    <div class="field-group">
+      <label>Cargo</label>
+      <select id="trab-cargo"><option value="">Seleccionar...</option></select>
+    </div>
+    <button class="modal-btn modal-btn-primary" onclick="guardarTrabajador()">Guardar</button>
+    <button class="modal-btn modal-btn-ghost" onclick="closeModal('modal-trabajador')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-cargo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo Cargo</div>
+    <div class="field-group">
+      <label>Nombre del cargo</label>
+      <input type="text" id="cargo-nombre" placeholder="ej: Garzón, Barista, Cocinero">
+    </div>
+    <div class="field-group">
+      <label>PP — Puntos base</label>
+      <input type="number" id="cargo-puntos" placeholder="ej: 1, 0.7, 0.5" inputmode="decimal" step="0.1">
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Mayor puntaje = mayor proporción de la propina</p>
+    <button class="modal-btn modal-btn-primary" onclick="guardarCargo()">Guardar</button>
+    <button class="modal-btn modal-btn-ghost" onclick="closeModal('modal-cargo')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit-cargo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar Cargo</div>
+    <input type="hidden" id="edit-cargo-id">
+    <div class="field-group">
+      <label>Nombre</label>
+      <input type="text" id="edit-cargo-nombre">
+    </div>
+    <div class="field-group">
+      <label>PP — Puntos base</label>
+      <input type="number" id="edit-cargo-puntos" inputmode="decimal" step="0.1">
+    </div>
+    <button class="modal-btn modal-btn-primary" onclick="updateCargo()">Actualizar</button>
+    <button class="modal-btn modal-btn-ghost" onclick="closeModal('modal-edit-cargo')">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://meikvevdymbbhidpoycc.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laWt2ZXZkeW1iYmhpZHBveWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTgwNDEsImV4cCI6MjA5NTQzNDA0MX0.f4TrpzjUqpxzrFKRrjl3ut9VuZi-I6qgLOglkPb7ncw';
+const api=(path,opts={})=>fetch(`${SUPABASE_URL}/rest/v1/${path}`,{
+  headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...opts.headers},...opts
+}).then(r=>r.json());
+
+let cargos=[],trabajadores=[],semanaOffset=0,semanaInfOffset=0;
+let diasState={};
+const DIAS_SEMANA=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+document.addEventListener('DOMContentLoaded',async()=>{
+  await loadCargos();
+  await loadTrabajadores();
+  renderSemana();
+  updateWeekLabels();
+});
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-item .ni').forEach(n=>n.classList.remove('ni-bg'));
+  document.querySelector(`#nav-${name} .ni`)?.classList.add('ni-bg');
+  if(name==='informe')renderInforme();
+  if(name==='equipo')renderEquipo();
+  if(name==='cargos')renderCargos();
+}
+
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='modal-trabajador')populateCargoSelect();
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function today(){return new Date().toISOString().split('T')[0];}
+
+function getSemana(offset=0){
+  const now=new Date();
+  const day=now.getDay();
+  const diff=(day===0)?-6:1-day;
+  const lunes=new Date(now);
+  lunes.setDate(now.getDate()+diff+(offset*7));
+  lunes.setHours(0,0,0,0);
+  const fechas=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(lunes);
+    d.setDate(lunes.getDate()+i);
+    fechas.push(d.toISOString().split('T')[0]);
+  }
+  return fechas;
+}
+
+function formatFecha(str){
+  const[y,m,d]=str.split('-');
+  const M=['','ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(d)} ${M[parseInt(m)]}`;
+}
+function formatFechaLarga(str){
+  const[y,m,d]=str.split('-');
+  const M=['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${parseInt(d)} de ${M[parseInt(m)]} ${y}`;
+}
+
+function updateWeekLabels(){
+  const fechas=getSemana(semanaOffset);
+  document.getElementById('week-label-main').textContent=
+    semanaOffset===0?'Esta semana':semanaOffset===-1?'Semana pasada':`Hace ${Math.abs(semanaOffset)} semanas`;
+  document.getElementById('week-sub-main').textContent=
+    `${formatFecha(fechas[0])} – ${formatFecha(fechas[6])} ${fechas[0].split('-')[0]}`;
+}
+
+async function renderSemana(){
+  const fechas=getSemana(semanaOffset);
+  updateWeekLabels();
+  const el=document.getElementById('days-list');
+  el.innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const propinasGuardadas=await api(`propinas?fecha=gte.${fechas[0]}&fecha=lte.${fechas[6]}&order=fecha.asc`);
+  const saved=Array.isArray(propinasGuardadas)?propinasGuardadas:[];
+  const savedById={};
+  if(saved.length){
+    const ids=saved.map(p=>p.id);
+    const detalles=await api(`propinas_detalle?propina_id=in.(${ids.join(',')})&order=trabajador_id.asc`);
+    if(Array.isArray(detalles)){
+      detalles.forEach(d=>{
+        if(!savedById[d.propina_id])savedById[d.propina_id]=[];
+        savedById[d.propina_id].push(d);
+      });
+    }
+  }
+  fechas.forEach(fecha=>{
+    if(!diasState[fecha]){
+      const savedProp=saved.find(p=>p.fecha===fecha);
+      diasState[fecha]={
+        ptd:savedProp?savedProp.monto_total:0,
+        turno:savedProp?(savedById[savedProp.id]||[]).map(d=>({trabajador_id:d.trabajador_id,htp:d.horas,pp:null,monto_guardado:d.monto_asignado})):[],
+        propina_id:savedProp?savedProp.id:null,
+        guardado:!!savedProp
+      };
+    }
+  });
+  el.innerHTML=fechas.map((fecha,i)=>{
+    const st=diasState[fecha];
+    const esHoy=fecha===today();
+    const tCount=st.turno.length;
+    return`<div class="day-card${esHoy?' expanded':''}" id="daycard-${fecha}">
+      <div class="day-header" onclick="toggleDay('${fecha}')">
+        <div>
+          <div class="day-name">${DIAS_SEMANA[i]}${esHoy?' <span style="font-size:11px;background:var(--tq);color:#fff;border-radius:20px;padding:2px 8px;vertical-align:middle;">Hoy</span>':''}</div>
+          <div class="day-date">${formatFechaLarga(fecha)}</div>
+          <div class="day-meta">${tCount>0?tCount+' trabajador'+(tCount>1?'es':''):'Sin turno'} ${st.guardado?'<span style="color:var(--tq);font-weight:700;">✓ Guardado</span>':''}</div>
+          ${st.ptd>0?`<div class="day-ptd">$${parseInt(st.ptd).toLocaleString('es-CL')} PTD</div>`:''}
+        </div>
+        <div class="day-header-right">
+          <span class="chevron">▼</span>
+          ${st.guardado?`<button class="btn-del" onclick="event.stopPropagation();eliminarPropina('${fecha}')">×</button>`:''}
+        </div>
+      </div>
+      <div class="day-body" id="daybody-${fecha}">${renderDayBody(fecha)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDayBody(fecha){
+  const st=diasState[fecha];
+  const turnoHTML=st.turno.map(t=>{
+    const w=trabajadores.find(x=>x.id===t.trabajador_id);
+    const cargo=cargos.find(c=>c.id===w?.cargo_id);
+    const pp=t.pp!==null?t.pp:(cargo?cargo.puntos:1);
+    return`<div class="turno-row">
+      <div class="turno-top">
+        <div class="turno-bubble">${w?.iniciales||'?'}</div>
+        <div class="turno-info">
+          <div class="turno-name">${w?.nombre||'—'}</div>
+          <div class="turno-cargo">${cargo?.nombre||'Sin cargo'}</div>
+        </div>
+        ${!st.guardado?`<button class="btn-del" onclick="quitarDelTurno('${fecha}','${t.trabajador_id}')">×</button>`:''}
+      </div>
+      <div class="turno-fields">
+        <div>
+          <label>HTP (horas)</label>
+          <input type="number" value="${t.htp||8}" min="0.5" max="24" step="0.5" inputmode="decimal" ${st.guardado?'disabled':''} onchange="updateTurnoField('${fecha}','${t.trabajador_id}','htp',this.value)">
+        </div>
+        <div>
+          <label>PP (puntos día)</label>
+          <input type="number" value="${pp}" min="0.1" max="10" step="0.1" inputmode="decimal" ${st.guardado?'disabled':''} onchange="updateTurnoField('${fecha}','${t.trabajador_id}','pp',this.value)">
+        </div>
+      </div>
+      ${t.monto_guardado?`<div style="text-align:right;padding-top:8px;font-size:13px;color:var(--tq);font-weight:700;">$${parseInt(t.monto_guardado).toLocaleString('es-CL')}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const workerOptions=trabajadores
+    .filter(w=>!st.turno.find(t=>t.trabajador_id===w.id))
+    .map(w=>`<option value="${w.id}">${w.iniciales} – ${w.nombre}</option>`)
+    .join('');
+
+  const addRow=!st.guardado?`<div class="add-worker-row">
+    <select class="worker-select" id="addsel-${fecha}">
+      <option value="">+ Agregar trabajador...</option>
+      ${workerOptions}
+    </select>
+    <button class="btn-agregar" onclick="agregarAlTurno('${fecha}')">Agregar</button>
+  </div>`:'';
+
+  const ptdRow=!st.guardado?`<div class="ptd-row">
+    <div>
+      <label>PTD — Propina total del día ($)</label>
+      <input class="ptd-input" type="number" inputmode="numeric" value="${st.ptd||''}" placeholder="0" onchange="diasState['${fecha}'].ptd=parseFloat(this.value)||0">
+    </div>
+  </div>`:`<div style="background:var(--tq-bg);border-radius:10px;padding:10px 14px;margin-bottom:10px;margin-top:14px;">
+    <span style="font-size:12px;color:var(--text-muted);">PTD total</span>
+    <div style="font-size:18px;font-weight:800;color:var(--tq);">$${parseInt(st.ptd).toLocaleString('es-CL')}</div>
+  </div>`;
+
+  const calcBtn=!st.guardado&&st.turno.length>0?`<button class="btn-calcular" onclick="calcularDia('${fecha}')">✨ Calcular reparto</button>`:'';
+  const resHTML=st.resultado?renderResultadoHTML(fecha,st.resultado,st.ptd):'';
+
+  return`${ptdRow}${st.turno.length>0?`<div class="section-label">Turno</div>`:''}${turnoHTML}${addRow}${calcBtn}${resHTML}`;
+}
+
+function renderResultadoHTML(fecha,datos,PTD){
+  const HTD=datos.reduce((s,d)=>s+d.ponderado,0);
+  return`<div class="resultado-box">
+    <div class="resultado-title">Reparto calculado</div>
+    ${datos.map(d=>`<div class="res-row">
+      <div class="res-left">
+        <div class="res-bubble">${d.iniciales||'?'}</div>
+        <div>
+          <div class="res-name">${d.nombre}</div>
+          <div class="res-detail">PP:${d.PP} · ${d.HTP}h · ${d.ponderado.toFixed(2)} pts</div>
+        </div>
+      </div>
+      <div>
+        <div class="res-monto">$${d.monto.toLocaleString('es-CL')}</div>
+        <div class="res-pct">${(d.porcentaje*100).toFixed(1)}%</div>
+      </div>
+    </div>`).join('')}
+    <div class="res-total">
+      <span>Total PTD</span>
+      <strong>$${parseInt(PTD).toLocaleString('es-CL')}</strong>
+    </div>
+    ${!diasState[fecha].guardado?`<button class="btn-guardar" onclick="guardarDia('${fecha}')">💾 Guardar</button>`:''}
+  </div>`;
+}
+
+function toggleDay(fecha){
+  document.getElementById(`daycard-${fecha}`).classList.toggle('expanded');
+}
+
+function agregarAlTurno(fecha){
+  const sel=document.getElementById(`addsel-${fecha}`);
+  const wid=sel.value;
+  if(!wid)return;
+  const w=trabajadores.find(x=>x.id===wid);
+  const cargo=cargos.find(c=>c.id===w?.cargo_id);
+  diasState[fecha].turno.push({trabajador_id:wid,htp:8,pp:cargo?cargo.puntos:1});
+  refreshDayBody(fecha);
+}
+
+function quitarDelTurno(fecha,wid){
+  diasState[fecha].turno=diasState[fecha].turno.filter(t=>t.trabajador_id!==wid);
+  diasState[fecha].resultado=null;
+  refreshDayBody(fecha);
+}
+
+function updateTurnoField(fecha,wid,campo,valor){
+  const t=diasState[fecha].turno.find(x=>x.trabajador_id===wid);
+  if(t)t[campo]=parseFloat(valor)||0;
+  diasState[fecha].resultado=null;
+}
+
+function refreshDayBody(fecha){
+  const body=document.getElementById(`daybody-${fecha}`);
+  if(body)body.innerHTML=renderDayBody(fecha);
+  const st=diasState[fecha];
+  const metaEl=document.querySelector(`#daycard-${fecha} .day-meta`);
+  if(metaEl){
+    const c=st.turno.length;
+    metaEl.innerHTML=`${c>0?c+' trabajador'+(c>1?'es':''):'Sin turno'} ${st.guardado?'<span style="color:var(--tq);font-weight:700;">✓ Guardado</span>':''}`;
+  }
+}
+
+function calcularDia(fecha){
+  const st=diasState[fecha];
+  if(!st.ptd||st.ptd<=0){toast('⚠️ Ingresa el PTD');return;}
+  if(!st.turno.length){toast('⚠️ Agrega trabajadores al turno');return;}
+  let datos=st.turno.map(t=>{
+    const w=trabajadores.find(x=>x.id===t.trabajador_id);
+    const cargo=cargos.find(c=>c.id===w?.cargo_id);
+    const PP=parseFloat(t.pp)||(cargo?cargo.puntos:1);
+    const HTP=parseFloat(t.htp)||0;
+    return{trabajador_id:t.trabajador_id,nombre:w?.nombre||'—',iniciales:w?.iniciales||'?',cargo:cargo?.nombre||'',PP,HTP,ponderado:PP*HTP};
+  });
+  const HTD=datos.reduce((s,d)=>s+d.ponderado,0);
+  if(!HTD){toast('⚠️ Verifica horas y puntos');return;}
+  datos=datos.map(d=>({...d,porcentaje:d.ponderado/HTD,monto:Math.round((d.ponderado/HTD)*st.ptd)}));
+  const diff=st.ptd-datos.reduce((s,d)=>s+d.monto,0);
+  datos[0].monto+=diff;
+  diasState[fecha].resultado=datos;
+  refreshDayBody(fecha);
+}
+
+async function guardarDia(fecha){
+  const st=diasState[fecha];
+  if(!st.resultado)return;
+  const propina=await api('propinas',{method:'POST',body:JSON.stringify({fecha,monto_total:st.ptd})});
+  if(!propina[0]?.id){toast('❌ Error al guardar');return;}
+  const detalles=st.resultado.map(d=>({propina_id:propina[0].id,trabajador_id:d.trabajador_id,horas:d.HTP,monto_asignado:d.monto}));
+  await api('propinas_detalle',{method:'POST',body:JSON.stringify(detalles)});
+  st.propina_id=propina[0].id;
+  st.guardado=true;
+  toast(`✅ ${DIAS_SEMANA[getSemana(semanaOffset).indexOf(fecha)]} guardado`);
+  refreshDayBody(fecha);
+  const card=document.getElementById(`daycard-${fecha}`);
+  const right=card?.querySelector('.day-header-right');
+  if(right)right.innerHTML=`<span class="chevron" style="transform:rotate(180deg);">▼</span><button class="btn-del" onclick="event.stopPropagation();eliminarPropina('${fecha}')">×</button>`;
+}
+
+async function eliminarPropina(fecha){
+  const st=diasState[fecha];
+  if(!st.propina_id)return;
+  if(!confirm('¿Eliminar registro de este día?'))return;
+  await api(`propinas_detalle?propina_id=eq.${st.propina_id}`,{method:'DELETE'});
+  await api(`propinas?id=eq.${st.propina_id}`,{method:'DELETE'});
+  diasState[fecha]={ptd:0,turno:[],propina_id:null,guardado:false,resultado:null};
+  renderSemana();
+  toast('🗑️ Eliminado');
+}
+
+function cambiarSemana(dir){
+  semanaOffset+=dir;
+  if(semanaOffset>0)semanaOffset=0;
+  diasState={};
+  renderSemana();
+}
+
+async function loadCargos(){
+  const res=await api('cargos?order=puntos.desc');
+  cargos=Array.isArray(res)?res:[];
+  renderCargos();
+}
+function renderCargos(){
+  const el=document.getElementById('cargos-list');
+  if(!cargos.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">⚙️</div><p>Sin cargos</p></div>`;return;
+  }
+  el.innerHTML=cargos.map(c=>`
+    <div class="cargo-card">
+      <div>
+        <div class="cargo-name">${c.nombre}</div>
+        <div class="cargo-sub">Puntos base (PP)</div>
+      </div>
+      <div class="cargo-actions">
+        <span class="cargo-pts">${c.puntos} pts</span>
+        <button class="btn-del" onclick="deleteCargo('${c.id}')">×</button>
+      </div>
+    </div>`).join('');
+}
+async function guardarCargo(){
+  const nombre=document.getElementById('cargo-nombre').value.trim();
+  const puntos=parseFloat(document.getElementById('cargo-puntos').value);
+  if(!nombre||isNaN(puntos)){toast('⚠️ Completa todos los campos');return;}
+  await api('cargos',{method:'POST',body:JSON.stringify({nombre,puntos})});
+  closeModal('modal-cargo');
+  document.getElementById('cargo-nombre').value='';
+  document.getElementById('cargo-puntos').value='';
+  await loadCargos();
+  toast('✅ Cargo guardado');
+}
+async function deleteCargo(id){
+  if(!confirm('¿Eliminar este cargo?'))return;
+  await api(`cargos?id=eq.${id}`,{method:'DELETE'});
+  await loadCargos();
+  toast('🗑️ Eliminado');
+}
+
+async function loadTrabajadores(){
+  const res=await api('trabajadores?order=nombre.asc');
+  trabajadores=Array.isArray(res)?res:[];
+  renderEquipo();
+}
+function renderEquipo(){
+  const el=document.getElementById('equipo-list');
+  if(!trabajadores.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p>Sin trabajadores</p></div>`;return;
+  }
+  el.innerHTML=trabajadores.map(t=>{
+    const cargo=cargos.find(c=>c.id===t.cargo_id);
+    return`<div class="worker-card">
+      <div class="wcard-bubble">${t.iniciales||'?'}</div>
+      <div class="wcard-info">
+        <div class="wcard-name">${t.nombre}</div>
+        <div class="wcard-sub">${cargo?cargo.nombre+' · PP: '+cargo.puntos:'Sin cargo'}</div>
+      </div>
+      <button class="btn-del" onclick="deleteTrabajador('${t.id}')">×</button>
+    </div>`;
+  }).join('');
+}
+function autoIniciales(){
+  const nombre=document.getElementById('trab-nombre').value.trim();
+  const p=nombre.split(' ').filter(Boolean);
+  if(p.length>=2)document.getElementById('trab-iniciales').value=(p[0][0]+p[1][0]).toUpperCase();
+}
+function populateCargoSelect(){
+  const sel=document.getElementById('trab-cargo');
+  sel.innerHTML='<option value="">Seleccionar...</option>'+
+    cargos.map(c=>`<option value="${c.id}">${c.nombre} (PP: ${c.puntos})</option>`).join('');
+}
+async function guardarTrabajador(){
+  const nombre=document.getElementById('trab-nombre').value.trim();
+  const iniciales=document.getElementById('trab-iniciales').value.trim().toUpperCase();
+  const cargo_id=document.getElementById('trab-cargo').value;
+  if(!nombre||!iniciales||!cargo_id){toast('⚠️ Completa todos los campos');return;}
+  await api('trabajadores',{method:'POST',body:JSON.stringify({nombre,iniciales,cargo_id})});
+  closeModal('modal-trabajador');
+  document.getElementById('trab-nombre').value='';
+  document.getElementById('trab-iniciales').value='';
+  document.getElementById('trab-cargo').value='';
+  await loadTrabajadores();
+  toast('✅ Trabajador guardado');
+}
+async function deleteTrabajador(id){
+  if(!confirm('¿Eliminar?'))return;
+  await api(`trabajadores?id=eq.${id}`,{method:'DELETE'});
+  await loadTrabajadores();
+  toast('🗑️ Eliminado');
+}
+
+async function renderInforme(){
+  const fechas=getSemana(semanaInfOffset);
+  const lunes=fechas[0],domingo=fechas[6];
+  document.getElementById('week-label-inf').textContent=
+    semanaInfOffset===0?'Esta semana':semanaInfOffset===-1?'Semana pasada':`Hace ${Math.abs(semanaInfOffset)} semanas`;
+  document.getElementById('week-sub-inf').textContent=
+    `${formatFecha(lunes)} – ${formatFecha(domingo)} ${lunes.split('-')[0]}`;
+  const el=document.getElementById('informe-contenido');
+  el.innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const propinas=await api(`propinas?fecha=gte.${lunes}&fecha=lte.${domingo}&order=fecha.asc`);
+  if(!Array.isArray(propinas)||!propinas.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><p>Sin registros esta semana</p></div>`;return;
+  }
+  const ids=propinas.map(p=>p.id);
+  const detalles=await api(`propinas_detalle?propina_id=in.(${ids.join(',')})&order=trabajador_id.asc`);
+  const resumen={};
+  if(Array.isArray(detalles)){
+    detalles.forEach(d=>{
+      if(!resumen[d.trabajador_id]){
+        const t=trabajadores.find(w=>w.id===d.trabajador_id);
+        const cargo=cargos.find(c=>c.id===t?.cargo_id);
+        resumen[d.trabajador_id]={nombre:t?.nombre||'—',iniciales:t?.iniciales||'?',cargo:cargo?.nombre||'—',total:0,dias:0,horas:0};
+      }
+      resumen[d.trabajador_id].total+=d.monto_asignado;
+      resumen[d.trabajador_id].dias+=1;
+      resumen[d.trabajador_id].horas+=d.horas;
+    });
+  }
+  const PTD_semana=propinas.reduce((s,p)=>s+p.monto_total,0);
+  const rows=Object.values(resumen).sort((a,b)=>b.total-a.total);
+  el.innerHTML=`
+    <div class="inf-week-total">
+      <span>Total semana</span>
+      <strong>$${PTD_semana.toLocaleString('es-CL')}</strong>
+    </div>
+    <div class="inf-card">
+      <div class="inf-card-title">Por trabajador</div>
+      ${rows.map(r=>`<div class="inf-row">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="res-bubble" style="width:32px;height:32px;font-size:11px;">${r.iniciales}</div>
+          <div>
+            <div class="inf-name">${r.nombre}</div>
+            <div class="inf-sub">${r.cargo} · ${r.dias} día${r.dias>1?'s':''} · ${r.horas}h</div>
+          </div>
+        </div>
+        <div class="inf-total-monto">$${r.total.toLocaleString('es-CL')}</div>
+      </div>`).join('')}
+    </div>
+    <div class="inf-card">
+      <div class="inf-card-title">Por día</div>
+      ${propinas.map(p=>{
+        const dd=Array.isArray(detalles)?detalles.filter(d=>d.propina_id===p.id):[];
+        const inics=dd.map(d=>{const t=trabajadores.find(w=>w.id===d.trabajador_id);return t?.iniciales||'?';}).join(' · ');
+        const diaNombre=DIAS_SEMANA[fechas.indexOf(p.fecha)]||'';
+        return`<div class="inf-row">
+          <div>
+            <div class="inf-name">${diaNombre} ${formatFecha(p.fecha)}</div>
+            <div class="inf-sub">${inics}</div>
+          </div>
+          <div class="inf-total-monto">$${p.monto_total.toLocaleString('es-CL')}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <p style="text-align:center;font-size:11px;color:var(--text-muted);padding:10px 0;">
+      Generado ${formatFechaLarga(today())} · Cafetería Casa Turquesa
+    </p>`;
+}
+
+function cambiarSemanaInf(dir){
+  semanaInfOffset+=dir;
+  if(semanaInfOffset>0)semanaInfOffset=0;
+  renderInforme();
+}
+async function compartirInforme(){
+  const text=document.getElementById('informe-contenido').innerText;
+  if(navigator.share){await navigator.share({title:'Propinas Casa Turquesa',text});}
+  else{await navigator.clipboard.writeText(text);toast('📋 Copiado al portapapeles');}
+}
+function imprimirInforme(){window.print();}
+</script>
+</body>
+</html>
