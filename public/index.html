@@ -630,12 +630,19 @@ async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
   if(!email||!pass){showLoginError('Completa los campos');return;}
-  const res=await authApi('token?grant_type=password',{email,password:pass});
-  if(res.error){showLoginError('Email o contraseña incorrectos');return;}
+  let res;
+  try{
+    res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pass})
+    }).then(r=>r.json());
+  }catch(e){showLoginError('Error de conexión');return;}
+  if(!res.access_token||res.error){showLoginError('Email o contraseña incorrectos');return;}
   authToken=res.access_token;
   currentUser=res.user;
   currentRole=email===ADMIN_EMAIL?'admin':'encargado';
-  localStorage.setItem('ct_session',JSON.stringify({token:res.access_token,refresh_token:res.refresh_token,email,role:currentRole}));
+  localStorage.setItem('ct_session',JSON.stringify({token:res.access_token,email,role:currentRole}));
   initApp();
 }
 function doGuest(){
