@@ -293,6 +293,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 .empty{text-align:center;padding:30px 20px;color:var(--text-muted);}
 .empty-icon{font-size:36px;opacity:0.35;margin-bottom:8px;}
 .hint{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.reg-section{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--tq-bg);}
+.reg-num{width:28px;height:28px;border-radius:50%;background:var(--tq);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.reg-title{font-size:15px;font-weight:800;color:var(--tq-dark);margin-bottom:6px;}
+.reg-text{font-size:13px;color:var(--text);line-height:1.6;}
+.reg-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;}
+.reg-table th{background:var(--tq);color:#fff;padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;}
+.reg-table td{padding:7px 10px;border-bottom:1px solid var(--tq-bg);}
+.reg-table tr:last-child td{border-bottom:none;}
+.reg-step{background:var(--tq-bg);border-radius:10px;padding:12px;margin-top:10px;}
+.reg-step-label{font-size:12px;font-weight:800;color:var(--tq);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
+.reg-formula{font-size:13px;font-weight:700;color:var(--tq-dark);background:var(--white);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-family:monospace;}
+.reg-example{font-size:12px;color:var(--text-muted);line-height:1.5;}
+.reg-etapa{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:13px;line-height:1.5;}
 
 @media print{
   body *{display:none!important;}
@@ -411,6 +424,117 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
   </div>
 </div>
 
+<!-- REGLAMENTO -->
+<div class="screen" id="screen-reglamento">
+  <div class="screen-header"><div class="screen-title">Reglamento</div></div>
+  <div class="section-card" style="line-height:1.7;">
+
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Cafetería Casa Turquesa</div>
+      <div style="font-size:20px;font-weight:800;color:var(--tq-dark);margin-top:4px;">Reglamento de Propinas</div>
+    </div>
+
+    <div class="reg-section">
+      <div class="reg-num">1</div>
+      <div>
+        <div class="reg-title">Propósito</div>
+        <div class="reg-text">Este reglamento establece los criterios y el método de cálculo para la distribución equitativa de las propinas recibidas por el equipo de trabajo de Cafetería Casa Turquesa.</div>
+      </div>
+    </div>
+
+    <div class="reg-section">
+      <div class="reg-num">2</div>
+      <div>
+        <div class="reg-title">Elegibilidad</div>
+        <div class="reg-text">Tienen derecho a participar en el reparto de propinas todos los trabajadores que hayan cumplido su turno el día en que se generó la propina y que estén registrados en el sistema.</div>
+      </div>
+    </div>
+
+    <div class="reg-section">
+      <div class="reg-num">3</div>
+      <div>
+        <div class="reg-title">Cargos y Puntajes</div>
+        <div class="reg-text">El puntaje refleja el nivel de dedicación al servicio del cliente. Cada cargo cumple un rol distinto y complementario dentro del equipo. Ambos son parte esencial del servicio y ambos participan en el reparto.</div>
+        <table class="reg-table">
+          <thead><tr><th>Cargo</th><th>Puntaje (PP)</th></tr></thead>
+          <tbody>
+            <tr><td>Garzón Barista — Etapa 1</td><td>0.25 pts</td></tr>
+            <tr><td>Garzón Barista — Etapa 2</td><td>0.60 pts</td></tr>
+            <tr><td>Garzón Barista — Etapa 3</td><td>1.00 pt</td></tr>
+            <tr><td>Cocina</td><td>0.25 pts</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="reg-section">
+      <div class="reg-num">4</div>
+      <div>
+        <div class="reg-title">Jornada de referencia (HTD)</div>
+        <div class="reg-text">La jornada de referencia es el total de horas del día de trabajo según el cargo y el día de la semana.</div>
+        <table class="reg-table">
+          <thead><tr><th>Cargo</th><th>Lunes a Viernes</th><th>Sábado y Domingo</th></tr></thead>
+          <tbody>
+            <tr><td>Garzón Barista</td><td>14.5 hrs</td><td>13 hrs</td></tr>
+            <tr><td>Cocina</td><td>13.5 hrs</td><td>12 hrs</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="reg-section">
+      <div class="reg-num">5</div>
+      <div>
+        <div class="reg-title">Método de cálculo</div>
+        <div class="reg-text">El sistema considera tanto el puntaje del cargo como las horas efectivamente trabajadas en relación a la jornada total del día. Esto asegura que quien trabajó más horas reciba una proporción mayor dentro de su mismo nivel de puntaje.</div>
+
+        <div class="reg-step">
+          <div class="reg-step-label">Paso 1 — Punto real por persona</div>
+          <div class="reg-formula">PP real = PP × (Horas trabajadas ÷ Jornada del día)</div>
+          <div class="reg-example">Ejemplo: Un Garzón Barista Etapa 3 (PP = 1.0) que trabajó 8 hrs de una jornada de 14.5 hrs obtiene un PP real de 1.0 × (8 ÷ 14.5) = <strong>0.55 puntos</strong>.</div>
+        </div>
+
+        <div class="reg-step">
+          <div class="reg-step-label">Paso 2 — Suma total de puntos del turno</div>
+          <div class="reg-text" style="margin-top:4px;">Se suman los PP reales de todos los trabajadores que participaron ese día.</div>
+          <div class="reg-example">Ejemplo: Tres personas con PP reales de 0.55, 1.0 y 0.17 suman un total de <strong>1.72 puntos</strong>.</div>
+        </div>
+
+        <div class="reg-step">
+          <div class="reg-step-label">Paso 3 — Reparto proporcional</div>
+          <div class="reg-formula">Monto = (PP real ÷ Suma total PP reales) × Total propina del día</div>
+          <div class="reg-example">Ejemplo: Con una propina de $50.000 y suma total de 1.72 pts, el garzón con PP real de 1.0 recibe (1.0 ÷ 1.72) × $50.000 = <strong>$29.070</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reg-section">
+      <div class="reg-num">6</div>
+      <div>
+        <div class="reg-title">Break</div>
+        <div class="reg-text">Cada trabajador tiene asignado un tiempo de descanso según su contrato. Este tiempo <strong>no se considera</strong> hora trabajada para efectos del cálculo de propinas.</div>
+      </div>
+    </div>
+
+    <div class="reg-section" style="border-bottom:none;">
+      <div class="reg-num">7</div>
+      <div>
+        <div class="reg-title">Progresión de etapas — Garzón Barista</div>
+        <div class="reg-text">El cargo de Garzón Barista contempla tres etapas de desarrollo:</div>
+        <div class="reg-etapa"><span class="etapa-badge etapa-1">E1</span> <strong>Etapa 1 — Inicio (0.25 pts):</strong> Al incorporarse al equipo.</div>
+        <div class="reg-etapa"><span class="etapa-badge etapa-2">E2</span> <strong>Etapa 2 — Primera prueba aprobada (0.60 pts):</strong> Tras demostrar dominio de las competencias básicas del servicio.</div>
+        <div class="reg-etapa"><span class="etapa-badge etapa-3">E3</span> <strong>Etapa 3 — Segunda prueba aprobada (1.00 pt):</strong> Nivel completo de competencia en atención y servicio al cliente.</div>
+        <div class="reg-text" style="margin-top:10px;">El avance de etapa es evaluado y aprobado por la administración del local.</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--tq-bg);font-size:11px;color:var(--text-muted);">
+      Cafetería Casa Turquesa · Santiago, Chile
+    </div>
+
+  </div>
+</div>
+
 <!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
@@ -428,6 +552,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
     <button class="drawer-item" id="nav-simular" onclick="navTo('simular')"><span class="di">🧮</span>Simular</button>
     <button class="drawer-item" id="nav-equipo" onclick="navTo('equipo')"><span class="di">👥</span>Equipo & Cargos</button>
     <button class="drawer-item" id="nav-pruebas" onclick="navTo('pruebas')"><span class="di">📝</span>Pruebas</button>
+    <button class="drawer-item" id="nav-reglamento" onclick="navTo('reglamento')"><span class="di">📋</span>Reglamento</button>
   </div>
   <div class="drawer-footer">
     <div class="drawer-user" id="drawer-user-label"></div>
