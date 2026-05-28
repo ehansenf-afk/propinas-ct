@@ -320,6 +320,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
     </div>
     <button class="btn-login" onclick="doLogin()">Iniciar sesión</button>
     <button class="btn-guest" onclick="doGuest()">Entrar como Invitado</button>
+    <button onclick="localStorage.clear();location.reload();" style="background:transparent;border:none;color:rgba(255,255,255,0.5);font-size:12px;margin-top:14px;cursor:pointer;font-family:'Nunito',sans-serif;width:100%;text-align:center;">¿Problemas para entrar? Limpiar caché</button>
   </div>
 </div>
 
@@ -408,8 +409,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
   <div id="pruebas-content"></div>
 </div>
 
-<div class="screen" id="screen-usuarios">
-  <div class="screen-header"><div class="screen-title">Usuarios</div></div>
   <div class="section-card">
     <div class="section-card-title">👤 Encargados de Propinas</div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Podés deshabilitar o cambiar la contraseña de cada encargado.</p>
@@ -434,7 +433,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
     <button class="drawer-item" id="nav-simular" onclick="navTo('simular')"><span class="di">🧮</span>Simular</button>
     <button class="drawer-item" id="nav-equipo" onclick="navTo('equipo')"><span class="di">👥</span>Equipo & Cargos</button>
     <button class="drawer-item" id="nav-pruebas" onclick="navTo('pruebas')"><span class="di">📝</span>Pruebas</button>
-    <button class="drawer-item" id="nav-usuarios" onclick="navTo('usuarios')" style="display:none;"><span class="di">🔑</span>Usuarios</button>
   </div>
   <div class="drawer-footer">
     <div class="drawer-user" id="drawer-user-label"></div>
@@ -573,18 +571,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 </div>
 
 
-<!-- MODAL EDITAR USUARIO -->
-<div class="modal-overlay" id="modal-editar-usuario">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Editar Usuario</div>
-    <input type="hidden" id="edit-user-id">
-    <div class="field-group"><label>Nueva contraseña</label><input type="password" id="edit-user-pass" placeholder="Nueva contraseña"></div>
-    <button class="modal-btn modal-btn-primary" onclick="cambiarPassword()">Cambiar contraseña</button>
-    <button class="modal-btn modal-btn-ghost" onclick="closeModal('modal-editar-usuario')">Cancelar</button>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -638,7 +624,7 @@ async function doLogin(){
       body:JSON.stringify({email,password:pass})
     }).then(r=>r.json());
   }catch(e){showLoginError('Error de conexión');return;}
-  if(!res.access_token||res.error){showLoginError('Email o contraseña incorrectos');return;}
+  if(!res.access_token||res.error){localStorage.removeItem('ct_session');showLoginError('Email o contraseña incorrectos');return;}
   authToken=res.access_token;
   currentUser=res.user;
   currentRole=email===ADMIN_EMAIL?'admin':'encargado';
@@ -679,9 +665,6 @@ async function initApp(){
   const navEquipo=document.getElementById('nav-equipo');
   if(currentRole==='invitado')navEquipo.style.display='none';
   else navEquipo.style.display='';
-  const navUsuarios=document.getElementById('nav-usuarios');
-  if(currentRole==='admin')navUsuarios.style.display='';
-  else navUsuarios.style.display='none';
   const drawerLabel=document.getElementById('drawer-user-label');
   if(drawerLabel)drawerLabel.textContent=currentRole==='invitado'?'Invitado':(currentUser?.email||'Admin');
   const menuBtn=document.getElementById('menu-toggle-btn');
@@ -733,7 +716,6 @@ function showScreen(name){
   if(name==='equipo'){renderCargos();renderEquipo();const btnAgregar=document.getElementById('btn-agregar-trabajador');if(btnAgregar)btnAgregar.style.display=currentRole==='admin'?'':' none';}
   if(name==='pruebas')renderPruebas();
   if(name==='simular')renderSimWorkerSelect();
-  if(name==='usuarios')renderUsuarios();
 }
 function navTo(name){showScreen(name);closeDrawer();}
 function toggleDrawer(){
