@@ -396,7 +396,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
   <div class="section-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div class="section-card-title" style="margin-bottom:0;">👥 Equipo</div>
-      <button class="btn-nuevo" onclick="openModal('modal-trabajador')" style="padding:8px 16px;font-size:13px;">+ Agregar</button>
+      <button class="btn-nuevo" id="btn-agregar-trabajador" onclick="openModal('modal-trabajador')" style="padding:8px 16px;font-size:13px;display:none;">+ Agregar</button>
     </div>
     <div id="equipo-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
   </div>
@@ -411,11 +411,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 <div class="screen" id="screen-usuarios">
   <div class="screen-header"><div class="screen-title">Usuarios</div></div>
   <div class="section-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div class="section-card-title" style="margin-bottom:0;">👤 Encargados</div>
-      <button class="btn-nuevo" onclick="openModal('modal-nuevo-usuario')" style="padding:8px 16px;font-size:13px;">+ Nuevo</button>
-    </div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Solo tú puedes crear, editar y deshabilitar usuarios.</p>
+    <div class="section-card-title">👤 Encargados de Propinas</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Podés deshabilitar o cambiar la contraseña de cada encargado.</p>
     <div id="usuarios-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
   </div>
 </div>
@@ -576,19 +573,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 </div>
 
 
-<!-- MODAL NUEVO USUARIO -->
-<div class="modal-overlay" id="modal-nuevo-usuario">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nuevo Usuario</div>
-    <div class="field-group"><label>Email</label><input type="email" id="nuevo-user-email" placeholder="encargado@email.com"></div>
-    <div class="field-group"><label>Contraseña</label><input type="password" id="nuevo-user-pass" placeholder="Mínimo 6 caracteres"></div>
-    <p class="hint" style="margin-bottom:14px;">El rol será Encargado de Propinas automáticamente.</p>
-    <button class="modal-btn modal-btn-primary" onclick="crearUsuario()">Crear usuario</button>
-    <button class="modal-btn modal-btn-ghost" onclick="closeModal('modal-nuevo-usuario')">Cancelar</button>
-  </div>
-</div>
-
 <!-- MODAL EDITAR USUARIO -->
 <div class="modal-overlay" id="modal-editar-usuario">
   <div class="modal">
@@ -739,7 +723,7 @@ function showScreen(name){
   document.getElementById(`screen-${name}`).classList.add('active');
   const navEl=document.getElementById(`nav-${name}`);
   if(navEl)navEl.classList.add('active');
-  if(name==='equipo'){renderCargos();renderEquipo();}
+  if(name==='equipo'){renderCargos();renderEquipo();const btnAgregar=document.getElementById('btn-agregar-trabajador');if(btnAgregar)btnAgregar.style.display=currentRole==='admin'?'':' none';}
   if(name==='pruebas')renderPruebas();
   if(name==='simular')renderSimWorkerSelect();
   if(name==='usuarios')renderUsuarios();
@@ -1174,9 +1158,9 @@ function renderEquipo(){
           <div class="worker-item-name">${t.nombre}${esGB?`<span class="etapa-badge etapa-${etapa}">E${etapa} · ${pp}pp</span>`:` <span style="font-size:11px;color:var(--text-muted);">${pp}pp</span>`}</div>
           <div class="worker-item-sub">${cargo?.nombre||'—'} · Break: ${t.break_min||0}min</div>
         </div>
-        ${currentRole==='admin'||currentRole==='encargado'?`<button class="btn-del" onclick="deleteTrabajador('${t.id}')">×</button>`:''}
+        ${currentRole==='admin'?`<button class="btn-del" onclick="deleteTrabajador('${t.id}')">×</button>`:''}
       </div>
-      ${esGB&&(currentRole==='admin'||currentRole==='encargado')?`<div class="worker-item-actions">
+      ${esGB&&currentRole==='admin'?`<div class="worker-item-actions">
         <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">Etapa:</span>
         <button class="btn-etapa${etapa===1?' active':''}" onclick="cambiarEtapa('${t.id}',1)">E1</button>
         <button class="btn-etapa${etapa===2?' active':''}" onclick="cambiarEtapa('${t.id}',2)">E2</button>
