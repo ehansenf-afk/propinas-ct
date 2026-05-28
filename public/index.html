@@ -67,8 +67,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 .drawer-user{font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:600;}
 .btn-drawer-logout{width:100%;padding:10px;background:var(--red-bg);color:var(--red);border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
 /* MENU TOGGLE BTN */
-.menu-btn{position:fixed;bottom:24px;left:20px;width:52px;height:52px;border-radius:50%;background:var(--tq);border:none;color:#fff;font-size:22px;cursor:pointer;z-index:199;box-shadow:0 4px 16px rgba(42,122,116,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
-.menu-btn:active{transform:scale(0.92);}
+.menu-toggle-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;width:40px;height:40px;border-radius:10px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;}
+.menu-toggle-btn:active{background:rgba(255,255,255,0.25);}
 /* keep bottom-nav css empty for compat */
 .bottom-nav{display:none;}
 .nav-item{display:none;}
@@ -327,14 +327,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 <div id="app" style="display:none;">
 
 <div class="header">
-  <div class="header-icon">🏠</div>
+  <button class="menu-toggle-btn" id="menu-toggle-btn" onclick="toggleDrawer()" style="display:none;">☰</button>
   <div>
     <div class="header-title">CASA TURQUESA</div>
     <div class="header-sub">Propinas · Cafetería</div>
   </div>
   <div class="header-right">
     <span class="header-user" id="header-user"></span>
-    <button class="btn-logout" onclick="doLogout()">Salir</button>
   </div>
 </div>
 
@@ -447,7 +446,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 </div>
 
 <!-- MENU TOGGLE -->
-<button class="menu-btn" id="menu-btn" onclick="toggleDrawer()" style="display:none;">☰</button>
+
 
 </div><!-- /app -->
 
@@ -660,6 +659,7 @@ function doGuest(){
   initApp();
 }
 function doLogout(){
+  if(!confirm('¿Cerrar sesión?'))return;
   currentUser=null;currentRole=null;authToken=null;
   diasState={};simWorkers=[];
   localStorage.removeItem('ct_session');
@@ -668,7 +668,7 @@ function doLogout(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('login-email').value='';
   document.getElementById('login-pass').value='';
-  const menuBtn=document.getElementById('menu-btn');
+  const menuBtn=document.getElementById('menu-toggle-btn');
   if(menuBtn)menuBtn.style.display='none';
 }
 function showLoginError(msg){
@@ -693,7 +693,7 @@ async function initApp(){
   else navUsuarios.style.display='none';
   const drawerLabel=document.getElementById('drawer-user-label');
   if(drawerLabel)drawerLabel.textContent=currentRole==='invitado'?'Invitado':(currentUser?.email||'Admin');
-  const menuBtn=document.getElementById('menu-btn');
+  const menuBtn=document.getElementById('menu-toggle-btn');
   if(menuBtn)menuBtn.style.display='';
   await loadCargos();
   await loadTrabajadores();
@@ -748,7 +748,7 @@ function navTo(name){showScreen(name);closeDrawer();}
 function toggleDrawer(){
   const d=document.getElementById('drawer');
   const o=document.getElementById('drawer-overlay');
-  const b=document.getElementById('menu-btn');
+  const b=document.getElementById('menu-toggle-btn');
   const isOpen=d.classList.contains('open');
   if(isOpen){d.classList.remove('open');o.classList.remove('open');b.textContent='☰';}
   else{d.classList.add('open');o.classList.add('open');b.textContent='✕';}
@@ -756,7 +756,7 @@ function toggleDrawer(){
 function closeDrawer(){
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
-  document.getElementById('menu-btn').textContent='☰';
+  const mb=document.getElementById('menu-toggle-btn');if(mb)mb.textContent='☰';
 }
 function openModal(id){
   document.getElementById(id).classList.add('open');
@@ -1158,7 +1158,7 @@ function renderCargos(){
 }
 
 // ── TRABAJADORES ──
-async function loadTrabajadores(){const res=await api('trabajadores?order=nombre.asc&activo=eq.true');trabajadores=Array.isArray(res)?res:[];}
+async function loadTrabajadores(){const res=await api('trabajadores?order=nombre.asc');trabajadores=Array.isArray(res)?res.filter(t=>t.activo!==false):[];}
 function renderEquipo(){
   const el=document.getElementById('equipo-list');
   if(!trabajadores.length){el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p style="font-size:12px;">Sin trabajadores</p></div>`;return;}
@@ -1200,7 +1200,7 @@ async function guardarTrabajador(){
   const cargo_id=document.getElementById('trab-cargo').value;
   const break_min=parseInt(document.getElementById('trab-break').value)||0;
   if(!nombre||!iniciales||!cargo_id){toast('⚠️ Completa todos los campos');return;}
-  await api('trabajadores',{method:'POST',body:JSON.stringify({nombre,iniciales,cargo_id,break_min,etapa:1,activo:true})});
+  await api('trabajadores',{method:'POST',body:JSON.stringify({nombre,iniciales,cargo_id,break_min,etapa:1})});
   closeModal('modal-trabajador');
   ['trab-nombre','trab-iniciales','trab-cargo','trab-break'].forEach(id=>document.getElementById(id).value='');
   await loadTrabajadores();renderEquipo();renderSimWorkerSelect();toast('✅ Trabajador guardado');
