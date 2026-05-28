@@ -124,7 +124,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);overflow-x:hidden;}
 .etapa-1{background:#fdeaea;color:#c0392b;}
 .etapa-2{background:#fdf6e3;color:#8a6a00;}
 .etapa-3{background:#e8f5f4;color:var(--tq-dark);}
-.turno-time-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.turno-time-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
 .turno-time-field label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:3px;}
 .time-picker-btn{width:100%;padding:8px 6px;border:1.5px solid #e0eeed;border-radius:8px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;text-align:center;background:var(--tq-bg);color:var(--text);cursor:pointer;border:1.5px solid #e0eeed;}
 .time-picker-btn:disabled{opacity:0.5;}
@@ -903,6 +903,10 @@ function renderDayBody(fecha){
           <label>Break (min)</label>
           <input type="number" value="${breakMin}" min="0" max="120" inputmode="numeric" ${!editable?'disabled':''} style="width:100%;padding:8px 6px;border:1.5px solid #e0eeed;border-radius:8px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;text-align:center;background:var(--tq-bg);-webkit-appearance:none;" onchange="updateTurnoBreak('${fecha}','${t.trabajador_id}',this.value)">
         </div>
+        <div class="turno-time-field">
+          <label>PP</label>
+          <input type="text" value="${pp}" inputmode="decimal" ${!editable?'disabled':''} style="width:100%;padding:8px 6px;border:1.5px solid #e0eeed;border-radius:8px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;text-align:center;background:var(--tq-bg);-webkit-appearance:none;" onchange="updateTurnoPP('${fecha}','${t.trabajador_id}',this.value)">
+        </div>
       </div>
       <div class="turno-htp" id="htpd-${fecha}-${t.trabajador_id}">
         HTP: <strong>${htp>0?htp.toFixed(2)+' h':'—'}</strong> de ${htd}h
@@ -978,6 +982,12 @@ function updateTurnoBreak(fecha,wid,valor){
   const htp=calcHTP(t.entrada,t.salida,t.break_min);
   const disp=document.getElementById(`htpd-${fecha}-${wid}`);
   if(disp)disp.innerHTML=`HTP: <strong>${htp>0?htp.toFixed(2)+' h':'—'}</strong> de ${htd}h`;
+}
+function updateTurnoPP(fecha,wid,valor){
+  const t=diasState[fecha].turno.find(x=>x.trabajador_id===wid);
+  if(!t)return;
+  t.pp=parseFloat((valor||'0').toString().replace(',','.'))||0;
+  diasState[fecha].resultado=null;
 }
 function refreshDayBody(fecha){
   const body=document.getElementById(`daybody-${fecha}`);
