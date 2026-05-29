@@ -855,6 +855,37 @@ function showScreen(name){
   if(name==='equipo'){renderCargos();renderEquipo();const btnAgregar=document.getElementById('btn-agregar-trabajador');if(btnAgregar)btnAgregar.style.display=currentRole==='admin'?'':' none';}
   if(name==='pruebas')renderPruebas();
   if(name==='simular')renderSimWorkerSelect();
+  if(name==='semana'){renderDaysList();}
+}
+function renderDaysList(){
+  // Re-render days without resetting state
+  const fechas=getSemana(semanaOffset);
+  updateWeekLabels();
+  const el=document.getElementById('days-list');
+  if(!el)return;
+  const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  el.innerHTML=fechas.map((fecha,i)=>{
+    const st=diasState[fecha]||{ptd:0,turno:[],propina_id:null,guardado:false,editing:false};
+    if(!diasState[fecha])diasState[fecha]=st;
+    const esHoy=fecha===today();
+    const summaryHTML=st.guardado&&st.turno.length?`<div class="day-summary">${st.turno.map(t=>{const w=trabajadores.find(x=>x.id===t.trabajador_id);return`<div class="day-summary-row"><span>${w?.nombre||'—'} · ${(t.horas||0).toFixed(1)}h</span><span>$${(t.monto_guardado||0).toLocaleString('es-CL')}</span></div>`;}).join('')}<div class="day-total">Total: $${parseInt(st.ptd).toLocaleString('es-CL')}</div></div>`:'';
+    return`<div class="day-card${esHoy?' expanded':''}" id="daycard-${fecha}">
+      <div class="day-header" onclick="toggleDay('${fecha}')">
+        <div style="flex:1;">
+          <div class="day-name">${DIAS[i]}${esHoy?` <span style="font-size:11px;background:var(--tq);color:#fff;border-radius:20px;padding:2px 8px;vertical-align:middle;">Hoy</span>`:''}</div>
+          <div class="day-date">${formatFechaLarga(fecha)}</div>
+          ${!st.guardado?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${st.turno.length>0?st.turno.length+' trabajador'+(st.turno.length>1?'es':''):'Sin turno'}</div>`:''}
+          ${summaryHTML}
+        </div>
+        <div class="day-header-right" id="dayright-${fecha}">
+          <span class="chevron">▼</span>
+          ${st.guardado&&!st.editing&&currentRole==='admin'?`<button class="btn-edit" onclick="event.stopPropagation();activarEdicion('${fecha}')">✏️</button>`:''}
+        </div>
+      </div>
+      <div class="day-body" id="daybody-${fecha}">${renderDayBody(fecha)}</div>
+    </div>`;
+  }).join('');
+  checkInformeBtn();
 }
 function navTo(name){showScreen(name);closeDrawer();}
 function toggleDrawer(){
@@ -1047,7 +1078,11 @@ function renderDayBody(fecha){
     return`<option value="${w.id}">${w.iniciales} – ${w.nombre}${cargo?.tipo==='garzon_barista'?' E'+(w.etapa||1):''}`;
   }).join('');
 
-  const addRow=editable?`<div class="add-worker-row"><select class="worker-select" id="addsel-${fecha}"><option value="">+ Agregar trabajador...</option>${workerOpts}</select><button class="btn-agregar" onclick="agregarAlTurno('${fecha}')">Agregar</button></div>`:'';
+  // Get same day last week
+  const fechaAnterior=(()=>{const d=new Date(fecha+'T12:00:00');d.setDate(d.getDate()-7);return d.toISOString().split('T')[0];})();
+  const hayAnterior=diasState[fechaAnterior]&&diasState[fechaAnterior].turno.length>0;
+  const btnRepetir=editable&&!st.turno.length&&hayAnterior?`<button onclick="repetirDiaAnterior('${fecha}','${fechaAnterior}')" style="width:100%;padding:10px;background:var(--tq-bg);color:var(--tq);border:1.5px solid var(--tq-bg2);border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">🔄 Repetir turno del ${formatFecha(fechaAnterior)}</button>`:'';
+  const addRow=editable?`${btnRepetir}<div class="add-worker-row"><select class="worker-select" id="addsel-${fecha}"><option value="">+ Agregar trabajador...</option>${workerOpts}</select><button class="btn-agregar" onclick="agregarAlTurno('${fecha}')">Agregar</button></div>`:'';
 
   const ptdRow=editable
     ?`<div class="ptd-row"><label>PTD — Propina total del día ($)</label><input class="ptd-input" type="number" inputmode="numeric" value="${st.ptd||''}" placeholder="0" onchange="diasState['${fecha}'].ptd=parseFloat(this.value)||0"></div>`
@@ -1117,6 +1152,21 @@ function updateTurnoPP(fecha,wid,valor){
   t.pp=parseFloat((valor||'0').toString().replace(',','.'))||0;
   diasState[fecha].resultado=null;
 }
+function repetirDiaAnterior(fecha,fechaAnterior){
+  const stAnterior=diasState[fechaAnterior];
+  if(!stAnterior||!stAnterior.turno.length){toast('Sin turno anterior para copiar');return;}
+  // Copy turno without monto_guardado
+  diasState[fecha].turno=stAnterior.turno.map(t=>({
+    trabajador_id:t.trabajador_id,
+    entrada:t.entrada||'',
+    salida:t.salida||'',
+    break_min:t.break_min||0,
+    pp:t.pp
+  }));
+  diasState[fecha].resultado=null;
+  refreshDayBody(fecha);
+  toast('🔄 Turno copiado de la semana anterior');
+}
 function refreshDayBody(fecha){
   const body=document.getElementById(`daybody-${fecha}`);
   if(body)body.innerHTML=renderDayBody(fecha);
@@ -1156,12 +1206,11 @@ async function guardarDia(fecha){
   st.propina_id=propina[0].id;st.guardado=true;
   // Actualizar montos en turno para el mini resumen
   st.resultado.forEach(d=>{const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);if(t){t.monto_guardado=d.monto;t.horas=d.htp;}});
+  st.resultado=null;
   toast('✅ Día guardado');
   const card=document.getElementById(`daycard-${fecha}`);
   card.classList.remove('editing');
-  refreshDayBody(fecha);
-  // Re-render header del día para mostrar mini resumen
-  await renderSemana();
+  renderDaysList();
   checkInformeBtn();
 }
 
@@ -1179,7 +1228,7 @@ async function actualizarDia(fecha){
   await renderSemana();
 }
 
-function cambiarSemana(dir){semanaOffset+=dir;if(semanaOffset>0)semanaOffset=0;diasState={};renderSemana();}
+function cambiarSemana(dir){semanaOffset+=dir;if(semanaOffset>0)semanaOffset=0;diasState={};renderSemana(true);}
 
 // ── INFORME ──
 function generarInforme(){
