@@ -718,9 +718,40 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const ADMIN_EMAIL='ehansenf@gmail.com';
 const ETAPA_PP={1:0.25,2:0.6,3:1.0};
 
-const api=(path,opts={},token=null)=>fetch(`${SUPABASE_URL}/rest/v1/${path}`,{
-  headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${token||SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...opts.headers},...opts
-}).then(r=>r.json());
+// Token del usuario: se renueva solo antes de vencer (dura 1 h). Si no hay sesion valida, se usa la clave anonima como antes.
+let refreshToken=null,tokenExp=0,refrescando=null;
+function jwtExp(t){try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}}
+function guardarSesion(){
+  try{
+    const s=JSON.parse(localStorage.getItem('ct_session')||'{}');
+    s.token=authToken;s.refresh=refreshToken;
+    localStorage.setItem('ct_session',JSON.stringify(s));
+  }catch(e){}
+}
+async function validToken(){
+  if(!authToken)return null;
+  if(!tokenExp)tokenExp=jwtExp(authToken);
+  if(tokenExp-Date.now()>60000)return authToken;
+  if(!refreshToken)return null;
+  if(!refrescando){
+    refrescando=fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+      method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:refreshToken})
+    }).then(r=>r.json()).then(r=>{
+      if(!r.access_token)return null;
+      authToken=r.access_token;refreshToken=r.refresh_token||refreshToken;tokenExp=jwtExp(authToken);
+      guardarSesion();
+      return authToken;
+    }).catch(()=>null).finally(()=>{refrescando=null;});
+  }
+  return refrescando;
+}
+const api=async(path,opts={},token=null)=>{
+  const t=token||await validToken();
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`,{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${t||SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...opts.headers},...opts
+  }).then(r=>r.json());
+};
 
 const authApi=(path,body,token=null)=>fetch(`${SUPABASE_URL}/auth/v1/${path}`,{
   method:'POST',
@@ -738,6 +769,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
     try{
       const s=JSON.parse(saved);
       authToken=s.token;
+      refreshToken=s.refresh||null;
+      tokenExp=jwtExp(authToken);
       currentRole=s.role;
       currentUser={email:s.email};
       await initApp();
@@ -765,18 +798,20 @@ async function doLogin(){
   }catch(e){showLoginError('Error de conexión');return;}
   if(!res.access_token||res.error){localStorage.removeItem('ct_session');showLoginError('Email o contraseña incorrectos');return;}
   authToken=res.access_token;
+  refreshToken=res.refresh_token||null;
+  tokenExp=jwtExp(authToken);
   currentUser=res.user;
   currentRole=email===ADMIN_EMAIL?'admin':'encargado';
-  localStorage.setItem('ct_session',JSON.stringify({token:res.access_token,email,role:currentRole}));
+  localStorage.setItem('ct_session',JSON.stringify({token:res.access_token,refresh:res.refresh_token||null,email,role:currentRole}));
   initApp();
 }
 function doGuest(){
-  currentUser=null;currentRole='invitado';authToken=null;
+  currentUser=null;currentRole='invitado';authToken=null;refreshToken=null;tokenExp=0;
   initApp();
 }
 function doLogout(){
   if(!confirm('¿Cerrar sesión?'))return;
-  currentUser=null;currentRole=null;authToken=null;
+  currentUser=null;currentRole=null;authToken=null;refreshToken=null;tokenExp=0;
   diasState={};simWorkers=[];
   localStorage.removeItem('ct_session');
   closeDrawer();
@@ -1388,7 +1423,8 @@ async function deleteTrabajador(id){
   await loadTrabajadores();renderEquipo();toast('🗑️ Eliminado');
 }
 async function cambiarEtapa(id,etapa){
-  await api(`trabajadores?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({etapa})});
+  const r=await api(`trabajadores?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({etapa})});
+  if(!Array.isArray(r)||!r.length){toast('❌ No se pudo cambiar la etapa. Cierra sesión y vuelve a ingresar.');return;}
   await loadTrabajadores();renderEquipo();toast(`✅ Etapa actualizada a E${etapa}`);
 }
 
