@@ -958,7 +958,7 @@ function openTimePicker(title,currentVal,callback){
   else{timePickerHora=9;timePickerMin=0;}
   document.getElementById('time-picker-title').textContent=title;
   buildWheel('wheel-horas-items',Array.from({length:25},(_,i)=>String(i).padStart(2,'0')),timePickerHora);
-  buildWheel('wheel-minutos-items',Array.from({length:61},(_,i)=>String(i).padStart(2,'0')),timePickerMin);
+  buildWheel('wheel-minutos-items',Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),timePickerMin);
   document.getElementById('time-picker-overlay').classList.add('open');
 }
 function buildWheel(id,items,selected){
@@ -992,7 +992,7 @@ function confirmTimePicker(){
   container.addEventListener('touchmove',e=>{
     if(!isDragging)return;
     const dy=e.touches[0].clientY-startY;
-    const maxItems=id==='wheel-horas'?25:61;
+    const maxItems=id==='wheel-horas'?25:60;
     const newT=Math.max(-(maxItems-1)*48,Math.min(0,startTranslate+dy));
     getList().style.transform=`translateY(${newT}px)`;
   },{passive:true});
@@ -1000,7 +1000,7 @@ function confirmTimePicker(){
     isDragging=false;
     const t=getTranslate();
     const idx=Math.round(-t/48);
-    const maxItems=id==='wheel-horas'?25:61;
+    const maxItems=id==='wheel-horas'?25:60;
     const clamped=Math.max(0,Math.min(maxItems-1,idx));
     selectWheelItem(id+'-items',clamped);
   });
@@ -1129,7 +1129,7 @@ function renderDayBody(fecha){
     ?`<div class="ptd-row"><label>PTD — Propina total del día ($)</label><input class="ptd-input" type="number" inputmode="numeric" value="${st.ptd||''}" placeholder="0" onchange="diasState['${fecha}'].ptd=parseFloat(this.value)||0"></div>`
     :`<div style="background:var(--tq-bg);border-radius:10px;padding:10px 14px;margin-bottom:10px;margin-top:14px;"><span style="font-size:12px;color:var(--text-muted);">PTD total</span><div style="font-size:18px;font-weight:800;color:var(--tq);">$${parseInt(st.ptd).toLocaleString('es-CL')}</div></div>`;
 
-  const editBanner=st.editing?`<div class="editing-banner">✏️ Modo edición — solo Admin puede editar histórico</div>`:'';
+  const editBanner=st.editing?`<div class="editing-banner">✏️ Modo edición — solo Admin puede editar histórico <button onclick="cancelarEdicion('${fecha}')" style="margin-left:8px;padding:4px 10px;border:none;border-radius:8px;background:#fff;color:var(--tq);font-weight:700;cursor:pointer;">Cancelar</button></div>`:'';
   const calcBtn=editable&&st.turno.length>0?`<button class="btn-calcular" onclick="calcularDia('${fecha}')">✨ Calcular reparto</button>`:'';
   const resHTML=st.resultado?renderResultadoHTML(fecha,st.resultado,st.ptd):'';
 
@@ -1236,15 +1236,25 @@ function calcularDia(fecha){
 }
 
 async function guardarDia(fecha){
-  const st=diasState[fecha];if(!st.resultado)return;
-  const propina=await api('propinas',{method:'POST',body:JSON.stringify({fecha,monto_total:st.ptd})});
-  if(!propina[0]?.id){toast('❌ Error al guardar');return;}
-  const detalles=st.resultado.map(d=>{
-    const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);
-    return{propina_id:propina[0].id,trabajador_id:d.trabajador_id,horas:d.htp,entrada:t?.entrada||null,salida:t?.salida||null,break_min:t?.break_min||0,pp:d.pp,monto_asignado:d.monto};
-  });
-  await api('propinas_detalle',{method:'POST',body:JSON.stringify(detalles)});
-  st.propina_id=propina[0].id;st.guardado=true;
+  const st=diasState[fecha];if(!st.resultado||st.guardando)return;
+  st.guardando=true;
+  try{
+    // Evita duplicar el día si ya fue guardado (otro dispositivo, doble toque)
+    const existe=await api(`propinas?fecha=eq.${fecha}&select=id`);
+    if(Array.isArray(existe)&&existe.length){toast('⚠️ Este día ya está guardado. Recarga la semana.');return;}
+    const propina=await api('propinas',{method:'POST',body:JSON.stringify({fecha,monto_total:st.ptd})});
+    if(!propina[0]?.id){toast('❌ Error al guardar. Cierra sesión y vuelve a ingresar.');return;}
+    const detalles=st.resultado.map(d=>{
+      const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);
+      return{propina_id:propina[0].id,trabajador_id:d.trabajador_id,horas:d.htp,entrada:t?.entrada||null,salida:t?.salida||null,break_min:t?.break_min||0,pp:d.pp,monto_asignado:d.monto};
+    });
+    const det=await api('propinas_detalle',{method:'POST',body:JSON.stringify(detalles)});
+    if(!Array.isArray(det)||det.length!==detalles.length){
+      await api(`propinas?id=eq.${propina[0].id}`,{method:'DELETE'});
+      toast('❌ No se pudo guardar el reparto. Intenta de nuevo.');return;
+    }
+    st.propina_id=propina[0].id;st.guardado=true;
+  }finally{st.guardando=false;}
   // Actualizar montos en turno para el mini resumen
   st.resultado.forEach(d=>{const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);if(t){t.monto_guardado=d.monto;t.horas=d.htp;}});
   st.resultado=null;
@@ -1256,17 +1266,29 @@ async function guardarDia(fecha){
 }
 
 async function actualizarDia(fecha){
-  const st=diasState[fecha];if(!st.resultado||!st.propina_id)return;
-  await api(`propinas?id=eq.${st.propina_id}`,{method:'PATCH',body:JSON.stringify({monto_total:st.ptd})});
-  await api(`propinas_detalle?propina_id=eq.${st.propina_id}`,{method:'DELETE'});
-  const detalles=st.resultado.map(d=>{
-    const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);
-    return{propina_id:st.propina_id,trabajador_id:d.trabajador_id,horas:d.htp,entrada:t?.entrada||null,salida:t?.salida||null,break_min:t?.break_min||0,pp:d.pp,monto_asignado:d.monto};
-  });
-  await api('propinas_detalle',{method:'POST',body:JSON.stringify(detalles)});
-  st.editing=false;st.resultado.forEach(d=>{const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);if(t){t.monto_guardado=d.monto;t.horas=d.htp;}});
-  toast('✅ Registro actualizado');
-  await renderSemana();
+  const st=diasState[fecha];if(!st.resultado||!st.propina_id||st.guardando)return;
+  st.guardando=true;
+  try{
+    // 1) anotar el detalle viejo, 2) insertar el nuevo, 3) recién ahí borrar el viejo (si algo falla no se pierde nada)
+    const viejo=await api(`propinas_detalle?propina_id=eq.${st.propina_id}&select=id`);
+    if(!Array.isArray(viejo)){toast('❌ No se pudo leer el registro actual');return;}
+    const detalles=st.resultado.map(d=>{
+      const t=st.turno.find(x=>x.trabajador_id===d.trabajador_id);
+      return{propina_id:st.propina_id,trabajador_id:d.trabajador_id,horas:d.htp,entrada:t?.entrada||null,salida:t?.salida||null,break_min:t?.break_min||0,pp:d.pp,monto_asignado:d.monto};
+    });
+    const nuevo=await api('propinas_detalle',{method:'POST',body:JSON.stringify(detalles)});
+    if(!Array.isArray(nuevo)||nuevo.length!==detalles.length){toast('❌ No se pudo actualizar. El registro anterior sigue intacto.');return;}
+    if(viejo.length)await api(`propinas_detalle?id=in.(${viejo.map(v=>v.id).join(',')})`,{method:'DELETE'});
+    const p=await api(`propinas?id=eq.${st.propina_id}`,{method:'PATCH',body:JSON.stringify({monto_total:st.ptd})});
+    if(!Array.isArray(p)||!p.length){toast('⚠️ Se guardó el reparto pero no el total del día');return;}
+    toast('✅ Registro actualizado');
+    delete diasState[fecha];
+    await renderSemana();
+  }finally{st.guardando=false;}
+}
+function cancelarEdicion(fecha){
+  delete diasState[fecha];
+  renderSemana();toast('Edición cancelada');
 }
 
 function cambiarSemana(dir){semanaOffset+=dir;if(semanaOffset>0)semanaOffset=0;diasState={};renderSemana(true);}
@@ -1324,8 +1346,10 @@ function generarInforme(){
 
 async function compartirInforme(){
   const texto=generarTextoInforme();
-  if(navigator.share)await navigator.share({title:'Propinas Casa Turquesa',text:texto});
-  else{await navigator.clipboard.writeText(texto);toast('📋 Copiado al portapapeles');}
+  try{
+    if(navigator.share)await navigator.share({title:'Propinas Casa Turquesa',text:texto});
+    else{await navigator.clipboard.writeText(texto);toast('📋 Copiado al portapapeles');}
+  }catch(e){if(e&&e.name!=='AbortError')toast('❌ No se pudo compartir');}
 }
 
 function generarTextoInforme(){
@@ -1412,15 +1436,17 @@ async function guardarTrabajador(){
   const cargo_id=document.getElementById('trab-cargo').value;
   const break_min=parseInt(document.getElementById('trab-break').value)||0;
   if(!nombre||!iniciales||!cargo_id){toast('⚠️ Completa todos los campos');return;}
-  await api('trabajadores',{method:'POST',body:JSON.stringify({nombre,iniciales,cargo_id,break_min,etapa:1})});
+  const nuevoT=await api('trabajadores',{method:'POST',body:JSON.stringify({nombre,iniciales,cargo_id,break_min,etapa:1})});
+  if(!Array.isArray(nuevoT)||!nuevoT.length){toast('❌ No se pudo guardar. Cierra sesión y vuelve a ingresar.');return;}
   closeModal('modal-trabajador');
   ['trab-nombre','trab-iniciales','trab-cargo','trab-break'].forEach(id=>document.getElementById(id).value='');
   await loadTrabajadores();renderEquipo();renderSimWorkerSelect();toast('✅ Trabajador guardado');
 }
 async function deleteTrabajador(id){
   if(!confirm('¿Eliminar este trabajador?'))return;
-  await api(`trabajadores?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({activo:false})});
-  await loadTrabajadores();renderEquipo();toast('🗑️ Eliminado');
+  const r=await api(`trabajadores?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({activo:false})});
+  if(!Array.isArray(r)||!r.length){toast('❌ No se pudo eliminar. Cierra sesión y vuelve a ingresar.');return;}
+  await loadTrabajadores();renderEquipo();renderSimWorkerSelect();toast('🗑️ Eliminado');
 }
 async function cambiarEtapa(id,etapa){
   const r=await api(`trabajadores?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({etapa})});
@@ -1544,7 +1570,8 @@ async function iniciarPrueba(pruebaId){
     const resp=await api(`respuestas?pregunta_id=eq.${q.id}`);
     return{...q,respuestas:Array.isArray(resp)?[...resp].sort(()=>Math.random()-0.5):[]};
   }));
-  pruebaActiva={id:pruebaId,preguntas:preguntasConResp};
+  const pInfo=await api(`pruebas?id=eq.${pruebaId}&select=puntaje_minimo`);
+  pruebaActiva={id:pruebaId,preguntas:preguntasConResp,minimo:(Array.isArray(pInfo)&&pInfo[0]?parseFloat(pInfo[0].puntaje_minimo):85)||85};
   respuestasSeleccionadas={};
   const el=document.getElementById('pruebas-content');
   el.innerHTML=`<div class="prueba-activa">
@@ -1593,14 +1620,15 @@ function terminarPrueba(){
     });
   });
   const pct=ptTotal>0?Math.round((ptObtenido/ptTotal)*100):0;
-  const aprobado=pct>=85;
+  const minimo=pruebaActiva.minimo||85;
+  const aprobado=pct>=minimo;
   document.getElementById('resultado-prueba-content').innerHTML=`
     <div style="text-align:center;padding:10px 0 20px;">
       <div style="font-size:60px;margin-bottom:12px;">${aprobado?'🎉':'😔'}</div>
       <div style="font-size:24px;font-weight:800;color:${aprobado?'#2e7d32':'var(--red)'};">${aprobado?'¡Aprobado!':'Reprobado'}</div>
       <div style="font-size:15px;color:var(--text-muted);margin-top:8px;">${ptObtenido} de ${ptTotal} puntos</div>
       <div style="font-size:32px;font-weight:800;color:var(--tq);margin-top:8px;">${pct}%</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Mínimo requerido: 85%</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Mínimo requerido: ${minimo}%</div>
     </div>`;
   openModal('modal-resultado-prueba');
 }
@@ -1665,8 +1693,10 @@ async function guardarPregunta(){
   if(!respuestas.find(r=>r.es_correcta)){toast('⚠️ Marca la respuesta correcta');return;}
   const preg=await api('preguntas',{method:'POST',body:JSON.stringify({prueba_id:pruebaId,texto,puntos,orden:Date.now()})});
   if(!preg[0]?.id){toast('❌ Error al guardar');return;}
-  for(const r of respuestas){
-    await api('respuestas',{method:'POST',body:JSON.stringify({pregunta_id:preg[0].id,...r})});
+  const resp=await api('respuestas',{method:'POST',body:JSON.stringify(respuestas.map(r=>({pregunta_id:preg[0].id,...r})))});
+  if(!Array.isArray(resp)||resp.length!==respuestas.length){
+    await api(`preguntas?id=eq.${preg[0].id}`,{method:'DELETE'});
+    toast('❌ No se pudieron guardar las respuestas');return;
   }
   closeModal('modal-pregunta');
   const prueba=await api(`pruebas?id=eq.${pruebaId}`);
@@ -1677,7 +1707,8 @@ async function guardarPregunta(){
 async function deletePregunta(id,pruebaId,pruebaNombre){
   if(!confirm('¿Eliminar esta pregunta?'))return;
   await api(`respuestas?pregunta_id=eq.${id}`,{method:'DELETE'});
-  await api(`preguntas?id=eq.${id}`,{method:'DELETE'});
+  const dq=await api(`preguntas?id=eq.${id}`,{method:'DELETE'});
+  if(!Array.isArray(dq)||!dq.length){toast('❌ No se pudo eliminar. Cierra sesión y vuelve a ingresar.');return;}
   await abrirAdminPrueba(pruebaId,pruebaNombre);
   toast('🗑️ Pregunta eliminada');
 }
