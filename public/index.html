@@ -1305,7 +1305,7 @@ function cancelarEdicion(fecha){
 function cambiarSemana(dir){semanaOffset+=dir;if(semanaOffset>0)semanaOffset=0;diasState={};renderSemana(true);}
 
 // ── INFORME ──
-function generarInforme(){
+function generarInformeDia(){
   const fechas=getSemana(semanaOffset);
   const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   const diasConData=fechas.filter(f=>diasState[f]&&diasState[f].guardado);
@@ -1355,6 +1355,81 @@ function generarInforme(){
   document.getElementById('informe-overlay').classList.add('open');
 }
 
+// ── REPARTO POR TRAMOS (L-V y S-D) ──
+let informeModo='dia';
+const TRAMOS_DEF=[{nombre:'Lunes a Viernes',idx:[0,1,2,3,4]},{nombre:'Sábado y Domingo',idx:[5,6]}];
+function calcTramos(fechas){
+  return TRAMOS_DEF.map(def=>{
+    const dias=def.idx.map(i=>fechas[i]).filter(f=>diasState[f]&&diasState[f].guardado&&diasState[f].turno.length);
+    // Cada día ya está repartido por separado: el tramo solo suma lo que cada persona recibió en esos días.
+    const acc={};let total=0;
+    dias.forEach(f=>{
+      const st=diasState[f];total+=parseFloat(st.ptd)||0;
+      st.turno.forEach(t=>{
+        const w=trabajadores.find(x=>x.id===t.trabajador_id);
+        if(!acc[t.trabajador_id])acc[t.trabajador_id]={nombre:w?.nombre||'—',horas:0,monto:0};
+        acc[t.trabajador_id].horas+=t.horas||0;
+        acc[t.trabajador_id].monto+=t.monto_guardado||0;
+      });
+    });
+    const personas=Object.values(acc).sort((a,b)=>b.monto-a.monto);
+    return{nombre:def.nombre,dias,total,personas};
+  });
+}
+function totalesPorPersonaTramos(tramos){
+  const por={};
+  tramos.forEach(tr=>tr.personas.forEach(p=>{por[p.nombre]=(por[p.nombre]||0)+p.monto;}));
+  return Object.entries(por).sort((a,b)=>b[1]-a[1]);
+}
+function informeToggleHTML(){
+  const b=(m,txt)=>`<button onclick="setInformeModo('${m}')" style="flex:1;padding:9px;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;${informeModo===m?'background:var(--tq);color:#fff;':'background:var(--tq-bg);color:var(--tq);'}">${txt}</button>`;
+  return`<div style="display:flex;gap:8px;margin-bottom:14px;">${b('dia','Por día')}${b('tramos','Por tramos (L-V · S-D)')}</div>`;
+}
+function setInformeModo(m){informeModo=m;generarInforme();}
+function generarInforme(){
+  const fechas=getSemana(semanaOffset);
+  if(!fechas.some(f=>diasState[f]&&diasState[f].guardado)){toast('Sin datos para generar informe');return;}
+  if(informeModo==='tramos')generarInformeTramos();else generarInformeDia();
+  document.getElementById('informe-body').insertAdjacentHTML('afterbegin',informeToggleHTML());
+}
+function generarInformeTramos(){
+  const f=getSemana(semanaOffset);
+  const tramos=calcTramos(f).filter(t=>t.dias.length);
+  const granTotal=tramos.reduce((s,t)=>s+t.total,0);
+  let html=`<div class="informe-header-doc">
+    <h1>Propinas Semana</h1>
+    <p>Casa Turquesa · ${formatFecha(f[0])} al ${formatFecha(f[6])} ${f[0].split('-')[0]} · por tramos</p>
+  </div>`;
+  tramos.forEach(tr=>{
+    html+=`<div class="informe-dia">
+      <div class="informe-dia-title">${tr.nombre} – <span>Total $${Math.round(tr.total).toLocaleString('es-CL')}</span></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">${tr.dias.length} día${tr.dias.length>1?'s':''} (cada uno repartido por separado): ${tr.dias.map(formatFecha).join(', ')}</div>
+      ${tr.personas.map(p=>`<div class="informe-persona"><span>• ${p.nombre} · ${p.horas.toFixed(1)}h</span><span>$${p.monto.toLocaleString('es-CL')}</span></div>`).join('')}
+    </div>`;
+  });
+  html+=`<div class="informe-total-semana">
+    <h3>Total semanal por persona</h3>
+    ${totalesPorPersonaTramos(tramos).map(([n,t])=>`<div class="informe-total-row"><span>• ${n}</span><span>$${t.toLocaleString('es-CL')}</span></div>`).join('')}
+    <div class="informe-gran-total"><span>Total semanal del local</span><span>$${Math.round(granTotal).toLocaleString('es-CL')}</span></div>
+  </div>`;
+  document.getElementById('informe-body').innerHTML=html;
+  document.getElementById('informe-overlay').classList.add('open');
+}
+function generarTextoInforme(){
+  if(informeModo!=='tramos')return generarTextoInformeDia();
+  const tramos=calcTramos(getSemana(semanaOffset)).filter(t=>t.dias.length);
+  let texto='';
+  tramos.forEach(tr=>{
+    texto+=`${tr.nombre} – Total $${Math.round(tr.total).toLocaleString('es-CL')}\n`;
+    tr.personas.forEach(p=>{texto+=`• ${p.nombre}: $${p.monto.toLocaleString('es-CL')}\n`;});
+    texto+='\n';
+  });
+  texto+='⸻\n\nTotal semanal por persona\n\n';
+  totalesPorPersonaTramos(tramos).forEach(([n,t])=>{texto+=`• ${n}: $${t.toLocaleString('es-CL')}\n`;});
+  texto+=`\nTotal semanal del local: $${Math.round(tramos.reduce((s,t)=>s+t.total,0)).toLocaleString('es-CL')}`;
+  return texto;
+}
+
 async function compartirInforme(){
   const texto=generarTextoInforme();
   try{
@@ -1363,7 +1438,7 @@ async function compartirInforme(){
   }catch(e){if(e&&e.name!=='AbortError')toast('❌ No se pudo compartir');}
 }
 
-function generarTextoInforme(){
+function generarTextoInformeDia(){
   const fechas=getSemana(semanaOffset);
   const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   const diasConData=fechas.filter(f=>diasState[f]&&diasState[f].guardado);
