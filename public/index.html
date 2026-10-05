@@ -728,17 +728,27 @@ function guardarSesion(){
     localStorage.setItem('ct_session',JSON.stringify(s));
   }catch(e){}
 }
+function sesionExpirada(){
+  if(!authToken&&!currentRole)return;
+  localStorage.removeItem('ct_session');
+  authToken=null;refreshToken=null;tokenExp=0;currentUser=null;currentRole=null;
+  const app=document.getElementById('app'),ls=document.getElementById('login-screen');
+  if(app)app.style.display='none';
+  if(ls)ls.style.display='flex';
+  const mb=document.getElementById('menu-toggle-btn');if(mb)mb.style.display='none';
+  if(typeof showLoginError==='function')showLoginError('Tu sesión expiró. Ingresa de nuevo.');
+}
 async function validToken(){
   if(!authToken)return null;
   if(!tokenExp)tokenExp=jwtExp(authToken);
   if(tokenExp-Date.now()>60000)return authToken;
-  if(!refreshToken)return null;
+  if(!refreshToken){if(tokenExp<Date.now())sesionExpirada();return null;}
   if(!refrescando){
     refrescando=fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
       method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
       body:JSON.stringify({refresh_token:refreshToken})
     }).then(r=>r.json()).then(r=>{
-      if(!r.access_token)return null;
+      if(!r.access_token){sesionExpirada();return null;}
       authToken=r.access_token;refreshToken=r.refresh_token||refreshToken;tokenExp=jwtExp(authToken);
       guardarSesion();
       return authToken;
@@ -771,6 +781,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       authToken=s.token;
       refreshToken=s.refresh||null;
       tokenExp=jwtExp(authToken);
+      if(!refreshToken&&tokenExp<Date.now()){localStorage.removeItem('ct_session');authToken=null;tokenExp=0;showLoginError('Tu sesión expiró. Ingresa de nuevo.');return;}
       currentRole=s.role;
       currentUser={email:s.email};
       await initApp();
